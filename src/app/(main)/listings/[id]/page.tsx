@@ -1,13 +1,15 @@
 "use client";
 
-import { use } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Container } from "@/components/layout/container";
 import { ListingDetail } from "@/components/listings/listing-detail";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { mockListings } from "@/lib/mock-data";
+import { ListingWithAuthor } from "@/types";
+import { deleteListing } from "@/actions/listings";
 
 export default function ListingDetailPage({
   params,
@@ -16,26 +18,62 @@ export default function ListingDetailPage({
 }) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const { data: session } = useSession();
+  const [listing, setListing] = useState<ListingWithAuthor | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Find the listing from mock data
-  const listing = mockListings.find((l) => l.id === resolvedParams.id);
+  useEffect(() => {
+    async function fetchListing() {
+      try {
+        const response = await fetch(`/api/listings/${resolvedParams.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setListing(data);
+        } else {
+          setListing(null);
+        }
+      } catch (error) {
+        console.error("Error fetching listing:", error);
+        setListing(null);
+      } finally {
+        setLoading(false);
+      }
+    }
 
-  // TODO: Replace with actual ownership check from session in Phase 8
-  const isOwner = false;
+    fetchListing();
+  }, [resolvedParams.id]);
+
+  const isOwner = listing && session?.user?.id === listing.userId;
 
   const handleEdit = () => {
-    alert("Edit functionality will be implemented in Phase 9");
-    // router.push(`/listings/${listing?.id}/edit`);
+    router.push(`/listings/${listing?.id}/edit`);
   };
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this listing?")) return;
 
-    // TODO: Implement actual delete logic in Phase 9
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    alert("Delete functionality will be implemented in Phase 9");
-    router.push("/dashboard");
+    if (!listing) return;
+
+    const result = await deleteListing(listing.id);
+    
+    if (result.success) {
+      router.push("/dashboard");
+    } else {
+      alert(result.error || "Failed to delete listing");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="py-20">
+        <Container>
+          <div className="text-center">
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </Container>
+      </div>
+    );
+  }
 
   if (!listing) {
     return (

@@ -1,16 +1,52 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Container } from "@/components/layout/container";
 import { ListingGrid } from "@/components/listings/listing-grid";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { mockListings } from "@/lib/mock-data";
+import { getUserListings } from "@/actions/listings";
+import { ListingWithAuthor } from "@/types";
 
 export default function DashboardPage() {
-  // TODO: Replace with actual user's listings from database in Phase 9
-  // For now, show all listings from first user as a demo
-  const userListings = mockListings.slice(0, 3);
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [userListings, setUserListings] = useState<ListingWithAuthor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+      return;
+    }
+
+    if (status === "authenticated") {
+      async function fetchUserListings() {
+        const result = await getUserListings();
+        if (result.success && result.data) {
+          setUserListings(result.data);
+        }
+        setLoading(false);
+      }
+
+      fetchUserListings();
+    }
+  }, [status, router]);
+
+  if (status === "loading" || loading) {
+    return (
+      <div className="py-20">
+        <Container>
+          <div className="text-center">
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </Container>
+      </div>
+    );
+  }
 
   return (
     <div className="py-12">
@@ -59,15 +95,6 @@ export default function DashboardPage() {
               1,234
             </p>
           </div>
-        </div>
-
-        {/* Notice */}
-        <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-900">
-            <strong>Demo Mode:</strong> This dashboard is showing mock data.
-            Once you implement authentication (Phase 8) and connect to the
-            backend (Phase 9), it will show your actual listings.
-          </p>
         </div>
 
         {/* Listings Grid */}

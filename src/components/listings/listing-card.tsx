@@ -3,7 +3,19 @@ import Image from "next/image";
 import { ListingWithAuthor } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin } from "lucide-react";
+import { MapPin, User, Clock } from "lucide-react";
+
+function formatTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - new Date(date).getTime()) / 1000);
+
+  if (diffInSeconds < 60) return "Just now";
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+  if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+  if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)} months ago`;
+  return `${Math.floor(diffInSeconds / 31536000)} years ago`;
+}
 
 interface ListingCardProps {
   listing: ListingWithAuthor;
@@ -33,10 +45,24 @@ export function ListingCard({ listing }: ListingCardProps) {
           <h3 className="font-semibold text-lg mb-2 line-clamp-1 group-hover:text-blue-600 transition-colors duration-200">
             {listing.title}
           </h3>
-          <div className="flex items-center text-sm text-gray-600 mb-3">
-            <MapPin className="h-4 w-4 mr-1 flex-shrink-0 group-hover:text-blue-600 transition-colors duration-200" />
+          <div className="flex items-center text-sm text-gray-600 mb-2">
+            <MapPin className="h-4 w-4 mr-1 shrink-0 group-hover:text-blue-600 transition-colors duration-200" />
             <span className="line-clamp-1">{listing.location}</span>
           </div>
+          <p className="text-sm text-gray-600 line-clamp-2 mb-3">{listing.description}</p>
+          
+          {/* Creator and Time Posted */}
+          <div className="flex items-center gap-3 text-xs text-gray-500 mb-3 pb-3 border-b">
+            <div className="flex items-center gap-1">
+              <User className="h-3 w-3" />
+              <span>{listing.author.name}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              <span>{formatTimeAgo(listing.createdAt)}</span>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between">
             <div>
               <span className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">

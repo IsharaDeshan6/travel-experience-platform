@@ -1,29 +1,59 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Container } from "@/components/layout/container";
 import { ListingForm } from "@/components/listings/listing-form";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { createListing } from "@/actions/listings";
 
 export default function CreateListingPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    }
+  }, [status, router]);
 
   const handleSubmit = async (data: any) => {
-    // TODO: Implement actual API call in Phase 9
-    console.log("Creating listing:", data);
+    const result = await createListing({
+      title: data.title,
+      description: data.description,
+      location: data.location,
+      price: parseFloat(data.price),
+      imageUrl: data.imageUrl,
+      category: data.category,
+      duration: data.duration,
+      maxGuests: data.maxGuests ? parseInt(data.maxGuests) : undefined,
+    });
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    alert(
-      "Listing creation will be connected to the backend in Phase 9. For now, this is just a UI demonstration."
-    );
-
-    // Redirect to home page
-    router.push("/");
+    if (result.success) {
+      router.push("/dashboard");
+    } else {
+      alert(result.error || "Failed to create listing");
+    }
   };
+
+  if (status === "loading") {
+    return (
+      <div className="py-20">
+        <Container>
+          <div className="text-center">
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </Container>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return null;
+  }
 
   return (
     <div className="py-12">
@@ -50,15 +80,6 @@ export default function CreateListingPage() {
 
           {/* Form */}
           <ListingForm onSubmit={handleSubmit} submitLabel="Create Listing" />
-
-          {/* Info Notice */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-900">
-              <strong>Note:</strong> This form is fully functional but not yet
-              connected to the database. Backend integration will be completed
-              in Phase 7-9.
-            </p>
-          </div>
         </div>
       </Container>
     </div>

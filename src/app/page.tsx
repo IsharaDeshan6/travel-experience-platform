@@ -1,21 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Container } from "@/components/layout/container";
 import { ListingGrid } from "@/components/listings/listing-grid";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { mockListings } from "@/lib/mock-data";
 import { CATEGORIES } from "@/lib/constants";
 import { Search, Sparkles } from "lucide-react";
+import { ListingWithAuthor } from "@/types";
 
 export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [listings, setListings] = useState<ListingWithAuthor[]>([]);
+
+  useEffect(() => {
+    async function fetchListings() {
+      try {
+        const response = await fetch("/api/listings");
+        if (response.ok) {
+          const data = await response.json();
+          setListings(data);
+        }
+      } catch (error) {
+        console.error("Error fetching listings:", error);
+      }
+    }
+
+    fetchListings();
+  }, []);
 
   const filteredListings = selectedCategory
-    ? mockListings.filter((listing) => listing.category === selectedCategory)
-    : mockListings;
+    ? listings.filter((listing) => listing.category === selectedCategory)
+    : listings;
 
   return (
     <>
@@ -77,10 +94,10 @@ export default function HomePage() {
               className="cursor-pointer px-4 py-2 hover:scale-105 transition-all duration-200 hover:shadow-md"
               onClick={() => setSelectedCategory(null)}
             >
-              All ({mockListings.length})
+              All ({listings.length})
             </Badge>
             {CATEGORIES.map((category) => {
-              const count = mockListings.filter(
+              const count = listings.filter(
                 (l) => l.category === category
               ).length;
               return (
