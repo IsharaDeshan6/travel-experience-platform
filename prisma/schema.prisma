@@ -1,0 +1,43 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  listings Listing[]
+
+  @@map("users")
+}
+
+model Listing {
+  id          String   @id @default(uuid())
+  title       String
+  description String   @db.Text
+  location    String
+  price       Decimal  @db.Decimal(10, 2)
+  imageUrl    String   @map("image_url")
+  category    String
+  duration    String?
+  maxGuests   Int?     @map("max_guests")
+  userId      String   @map("user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  author User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([category])
+  @@index([createdAt])
+  @@map("listings")
+}
