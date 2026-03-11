@@ -60,8 +60,8 @@ export function ListingCard({ listing, savedListingIds = [], onSaveToggle }: Lis
   };
 
   return (
-    <Link href={`/listings/${listing.id}`} className="block group">
-      <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 border-gray-200 hover:-translate-y-2 hover:border-blue-200">
+    <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 border-gray-200 hover:-translate-y-2 hover:border-blue-200 group relative">
+      <Link href={`/listings/${listing.id}`} className="block">
         <div className="relative aspect-4/3 overflow-hidden bg-gray-100">
           <Image
             src={listing.images[0] || "/placeholder.jpg"}
@@ -75,21 +75,6 @@ export function ListingCard({ listing, savedListingIds = [], onSaveToggle }: Lis
               {listing.category}
             </Badge>
           </div>
-          
-          {/* Save Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`absolute top-3 right-3 h-10 w-10 rounded-full backdrop-blur-sm transition-all ${
-              isSaved 
-                ? "bg-red-500 text-white hover:bg-red-600" 
-                : "bg-white/90 text-gray-700 hover:bg-white"
-            }`}
-            onClick={handleSaveClick}
-            disabled={isSaving}
-          >
-            <Heart className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`} />
-          </Button>
 
           {/* Gradient overlay on hover */}
           <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -130,7 +115,23 @@ export function ListingCard({ listing, savedListingIds = [], onSaveToggle }: Lis
             )}
           </div>
         </CardContent>
-      </Card>
-    </Link>
+      </Link>
+      
+      {/* Save Button - Outside Link */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`absolute top-3 right-3 h-10 w-10 rounded-full backdrop-blur-sm transition-all z-10 ${
+          isSaved 
+            ? "bg-red-500 text-white hover:bg-red-600" 
+            : "bg-white/90 text-gray-700 hover:bg-white"
+        }`}
+        onClick={handleSaveClick}
+        disabled={isSaving}
+        type="button"
+      >
+        <Heart className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`} />
+      </Button>
+    </Card>
   );
 }
