@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import ImageKit from "imagekit";
 
+// Mark this route as dynamic
+export const dynamic = 'force-dynamic';
 
 const privateKey = process.env.IMAGEKIT_PRIVATE_KEY || "";
 const publicKey = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY || "";

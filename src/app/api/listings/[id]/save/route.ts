@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
+// Mark this route as dynamic
+export const dynamic = 'force-dynamic';
+
 // POST /api/listings/[id]/save - Save/Like a listing
 export async function POST(
   request: NextRequest,

@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
+// Mark this route as dynamic
+export const dynamic = 'force-dynamic';
+
 // GET /api/listings/saved - Get user's saved listings
 export async function GET() {
   try {

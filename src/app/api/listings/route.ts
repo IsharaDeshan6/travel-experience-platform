@@ -4,6 +4,9 @@ import { auth } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
 import { createListingSchema } from "@/lib/validations";
 
+// Mark this route as dynamic
+export const dynamic = 'force-dynamic';
+
 // GET /api/listings - Fetch all listings with pagination and search
 export async function GET(request: NextRequest) {
   try {
