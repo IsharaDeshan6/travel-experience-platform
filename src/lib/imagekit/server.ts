@@ -1,13 +1,30 @@
-import ImageKit from "@imagekit/nodejs";
+
+
+// Validate environment variables
+import ImageKit from "imagekit";
+
+const publicKey = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY;
+const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
+const urlEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT;
+
+if (!publicKey || !privateKey || !urlEndpoint) {
+  console.error("ImageKit environment variables are missing!");
+  console.error("Required variables:", {
+    publicKey: publicKey ? "✓" : "✗ MISSING",
+    privateKey: privateKey ? "✓" : "✗ MISSING",
+    urlEndpoint: urlEndpoint ? "✓" : "✗ MISSING",
+  });
+  console.error("Please check your .env.local file");
+}
 
 // Server-side ImageKit instance with private key
-// @ts-expect-error - ImageKit types may not be fully compatible
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const imagekit = new ImageKit({
-  publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY || "",
-  privateKey: process.env.IMAGEKIT_PRIVATE_KEY || "",
-  urlEndpoint: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT || "",
-} as any);
+export const imagekit = publicKey && privateKey && urlEndpoint 
+  ? new ImageKit({
+      publicKey,
+      privateKey,
+      urlEndpoint,
+    })
+  : null;
 
 /**
  * Get file ID from ImageKit URL

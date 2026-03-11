@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { imagekit } from "@/lib/imagekit/server";
+import ImageKit from "imagekit";
+
+
+const privateKey = process.env.IMAGEKIT_PRIVATE_KEY || "";
+const publicKey = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY || "";
+const urlEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT || "";
 
 // POST /api/upload - Upload image to ImageKit
 export async function POST(request: NextRequest) {
@@ -13,6 +18,20 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Check if ImageKit is configured
+    if (!privateKey || !publicKey || !urlEndpoint) {
+      return NextResponse.json(
+        { error: "ImageKit is not configured. Please add credentials to .env.local file." },
+        { status: 500 }
+      );
+    }
+
+    const imagekit = new ImageKit({
+      publicKey,
+      privateKey,
+      urlEndpoint,
+    });
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
@@ -42,18 +61,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert file to buffer
+    // Convert file to base64
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const base64File = buffer.toString("base64");
 
     // Generate unique filename
     const timestamp = Date.now();
     const filename = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
 
     // Upload to ImageKit in "travel" folder
-    // @ts-expect-error - ImageKit types
     const uploadResponse = await imagekit.upload({
-      file: buffer,
+      file: base64File,
       fileName: filename,
       folder: "/travel",
       useUniqueFileName: true,

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NativeSelect } from "@/components/ui/native-select";
 import { CATEGORIES } from "@/lib/constants";
-import { Loader2, Upload, X, Image as ImageIcon } from "lucide-react";
+import { Loader2, Upload, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 
@@ -18,7 +18,7 @@ interface ListingFormProps {
     description: string;
     location: string;
     price: number;
-    imageUrl: string;
+    images: string[];
     category: string;
     duration?: string;
     maxGuests?: number;
@@ -34,8 +34,9 @@ export function ListingForm({
 }: ListingFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>(initialData?.imageUrl || "");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>(initialData?.images || []);
+  const [existingImages, setExistingImages] = useState<string[]>(initialData?.images || []);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
@@ -43,79 +44,114 @@ export function ListingForm({
     description: initialData?.description || "",
     location: initialData?.location || "",
     price: initialData?.price?.toString() || "",
-    imageUrl: initialData?.imageUrl || "",
     category: initialData?.category || CATEGORIES[0],
     duration: initialData?.duration || "",
     maxGuests: initialData?.maxGuests?.toString() || "",
   });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    // Validate file type
+    const totalImages = previewUrls.length + files.length;
+    if (totalImages > 10) {
+      toast.error("Maximum 10 images allowed");
+      return;
+    }
+
+    // Validate each file
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error("Invalid file type. Only JPEG, PNG, and WebP are allowed");
-      return;
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    const validFiles: File[] = [];
+    const newPreviews: string[] = [];
+
+    for (const file of files) {
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(`${file.name}: Invalid file type. Only JPEG, PNG, and WebP are allowed`);
+        continue;
+      }
+
+      if (file.size > maxSize) {
+        toast.error(`${file.name}: File too large. Maximum size is 5MB`);
+        continue;
+      }
+
+      validFiles.push(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        newPreviews.push(reader.result as string);
+        if (newPreviews.length === validFiles.length) {
+          setPreviewUrls(prev => [...prev, ...newPreviews]);
+        }
+      };
+      reader.readAsDataURL(file);
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      toast.error("File too large. Maximum size is 5MB");
-      return;
+    if (validFiles.length > 0) {
+      setSelectedFiles(prev => [...prev, ...validFiles]);
     }
 
-    setSelectedFile(file);
-    
-    // Create preview URL
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreviewUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveImage = () => {
-    setSelectedFile(null);
-    setPreviewUrl(initialData?.imageUrl || "");
+    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  const uploadImage = async (): Promise<string | null> => {
-    if (!selectedFile) {
-      // If no new file selected and we have an existing imageUrl, use it
-      return formData.imageUrl || null;
+  const handleRemoveImage = (index: number) => {
+    // Check if it's an existing image or a new upload
+    if (index < existingImages.length) {
+      // Remove from existing images
+      setExistingImages(prev => prev.filter((_, i) => i !== index));
+      setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+    } else {
+      // Remove from new uploads
+      const newFileIndex = index - existingImages.length;
+      setSelectedFiles(prev => prev.filter((_, i) => i !== newFileIndex));
+      setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const uploadImages = async (): Promise<string[]> => {
+    if (selectedFiles.length === 0) {
+      return existingImages;
     }
 
     setIsUploading(true);
-    const uploadToast = toast.loading("Uploading image...");
+    const uploadToast = toast.loading(`Uploading ${selectedFiles.length} image(s)...`);
 
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append("file", selectedFile);
+      const uploadedUrls: string[] = [];
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formDataToSend,
-      });
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        const formDataToSend = new FormData();
+        formDataToSend.append("file", file);
 
-      const data = await response.json();
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formDataToSend,
+        });
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to upload image");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || `Failed to upload ${file.name}`);
+        }
+
+        uploadedUrls.push(data.url);
+        toast.loading(`Uploading ${i + 1}/${selectedFiles.length} image(s)...`, { id: uploadToast });
       }
 
-      toast.success("Image uploaded successfully", { id: uploadToast });
-      return data.url;
+      toast.success(`${uploadedUrls.length} image(s) uploaded successfully`, { id: uploadToast });
+      return [...existingImages, ...uploadedUrls];
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to upload image", {
+      toast.error(error instanceof Error ? error.message : "Failed to upload images", {
         id: uploadToast,
       });
-      return null;
+      return [];
     } finally {
       setIsUploading(false);
     }
@@ -149,28 +185,24 @@ export function ListingForm({
       toast.error("Price must be greater than 0");
       return;
     }
-    if (!previewUrl && !selectedFile) {
-      toast.error("Please upload an image");
+    if (previewUrls.length === 0) {
+      toast.error("Please upload at least one image");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Upload image if a new file was selected
-      let imageUrl = formData.imageUrl;
-      if (selectedFile) {
-        const uploadedUrl = await uploadImage();
-        if (!uploadedUrl) {
-          setIsLoading(false);
-          return;
-        }
-        imageUrl = uploadedUrl;
+      // Upload new images if any
+      const allImageUrls = await uploadImages();
+      if (allImageUrls.length === 0) {
+        setIsLoading(false);
+        return;
       }
 
       await onSubmit({
         ...formData,
-        imageUrl,
+        images: allImageUrls,
         price: parseFloat(formData.price),
         maxGuests: formData.maxGuests ? parseInt(formData.maxGuests) : undefined,
       });
@@ -255,7 +287,7 @@ export function ListingForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="price">
-                Price (USD) <span className="text-red-500">*</span>
+                Price (LKR) <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="price"
@@ -290,56 +322,69 @@ export function ListingForm({
             </div>
           </div>
 
-          {/* Image Upload */}
+          {/* Multiple Images Upload */}
           <div className="space-y-2">
-            <Label htmlFor="image">
-              Image <span className="text-red-500">*</span>
+            <Label htmlFor="images">
+              Images <span className="text-red-500">*</span>
+              <span className="text-xs text-gray-500 ml-2">({previewUrls.length}/10)</span>
             </Label>
             
-            {previewUrl ? (
-              <div className="relative">
-                <div className="relative w-full h-64 rounded-lg overflow-hidden border-2 border-gray-200">
-                  <Image
-                    src={previewUrl}
-                    alt="Preview"
-                    fill
-                    className="object-cover"
-                  />
+            {/* Image Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {previewUrls.map((url, index) => (
+                <div key={index} className="relative group">
+                  <div className="relative w-full h-32 rounded-lg overflow-hidden border-2 border-gray-200">
+                    <Image
+                      src={url}
+                      alt={`Preview ${index + 1}`}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-1 right-1 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => handleRemoveImage(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                  {index === 0 && (
+                    <div className="absolute bottom-1 left-1 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                      Cover
+                    </div>
+                  )}
                 </div>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="absolute top-2 right-2"
-                  onClick={handleRemoveImage}
+              ))}
+              
+              {/* Add More Button */}
+              {previewUrls.length < 10 && (
+                <div
+                  className="relative w-full h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
                 >
-                  <X className="h-4 w-4 mr-1" />
-                  Remove
-                </Button>
-              </div>
-            ) : (
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 transition-colors"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <p className="text-sm text-gray-600 mb-2">
-                  Click to upload or drag and drop
-                </p>
-                <p className="text-xs text-gray-500">
-                  JPEG, PNG, or WebP (max 5MB)
-                </p>
-              </div>
-            )}
+                  <div className="text-center">
+                    <Plus className="h-8 w-8 mx-auto text-gray-400 mb-1" />
+                    <p className="text-xs text-gray-600">Add Image</p>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <input
               ref={fileInputRef}
               type="file"
               accept="image/jpeg,image/jpg,image/png,image/webp"
               onChange={handleFileSelect}
+              multiple
               className="hidden"
-              id="image"
+              id="images"
             />
+            
+            <p className="text-xs text-gray-500">
+              JPEG, PNG, or WebP (max 5MB each). First image will be the cover photo.
+            </p>
           </div>
 
           {/* Duration and Max Guests Row */}
@@ -351,7 +396,7 @@ export function ListingForm({
                 name="duration"
                 value={formData.duration}
                 onChange={handleChange}
-                placeholder="e.g., 4 hours, Full day"
+                placeholder="e.g., 4 hours, 2 days"
               />
             </div>
 
@@ -370,16 +415,23 @@ export function ListingForm({
           </div>
 
           {/* Submit Button */}
-          <Button type="submit" className="w-full" disabled={isLoading || isUploading}>
-            {isLoading || isUploading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {isUploading ? "Uploading image..." : "Submitting..."}
-              </>
-            ) : (
-              submitLabel
-            )}
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              type="submit"
+              disabled={isLoading || isUploading}
+              className="flex-1"
+              size="lg"
+            >
+              {isLoading || isUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isUploading ? "Uploading images..." : "Submitting..."}
+                </>
+              ) : (
+                submitLabel
+              )}
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

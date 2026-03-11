@@ -2,7 +2,46 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { updateListingSchema } from "@/lib/validations";
-import { deleteImageKitFile } from "@/lib/imagekit/server";
+import ImageKit from "imagekit";
+
+
+const privateKey = process.env.IMAGEKIT_PRIVATE_KEY || "";
+const publicKey = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY || "";
+const urlEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT || "";
+
+async function deleteImageFromImageKit(imageUrl: string): Promise<void> {
+  if (!privateKey || !publicKey || !urlEndpoint) {
+    console.error("ImageKit not configured, skipping image deletion");
+    return;
+  }
+
+  const imagekit = new ImageKit({
+    publicKey,
+    privateKey,
+    urlEndpoint,
+  });
+
+  try {
+    // Extract file path from URL
+    const urlObj = new URL(imageUrl);
+    const filePath = urlObj.pathname;
+
+    // List files to find the fileId
+    const files = await imagekit.listFiles({
+      searchQuery: `name="${imageUrl.split('/').pop()}"`,
+    });
+
+    if (files && files.length > 0) {
+      const file = files[0];
+      if ('fileId' in file) {
+        await imagekit.deleteFile(file.fileId);
+      }
+    }
+  } catch (error) {
+    console.error("Error deleting image from ImageKit:", error);
+    throw error;
+  }
+}
 
 // GET /api/listings/[id] - Fetch single listing
 export async function GET(
@@ -101,15 +140,24 @@ export async function PUT(
 
     const validatedData = validationResult.data;
 
-    // If imageUrl is being updated, delete old image from ImageKit
-    if (validatedData.imageUrl && validatedData.imageUrl !== existingListing.imageUrl) {
+    // If images are being updated, delete removed images from ImageKit
+    if (validatedData.images) {
       const urlEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT || "";
-      if (existingListing.imageUrl.includes(urlEndpoint)) {
-        try {
-          await deleteImageKitFile(existingListing.imageUrl);
-        } catch (error) {
-          console.error("Error deleting old image from ImageKit:", error);
-          // Continue with update even if old image deletion fails
+      const oldImages = existingListing.images;
+      const newImages = validatedData.images;
+      
+      // Find images that were removed
+      const removedImages = oldImages.filter(img => !newImages.includes(img));
+      
+      // Delete removed images from ImageKit
+      for (const imageUrl of removedImages) {
+        if (imageUrl.includes(urlEndpoint)) {
+          try {
+            await deleteImageFromImageKit(imageUrl);
+          } catch (error) {
+            console.error("Error deleting image from ImageKit:", error);
+            // Continue with update even if image deletion fails
+          }
         }
       }
     }
@@ -121,7 +169,7 @@ export async function PUT(
         ...(validatedData.description && { description: validatedData.description }),
         ...(validatedData.location && { location: validatedData.location }),
         ...(validatedData.price && { price: validatedData.price }),
-        ...(validatedData.imageUrl && { imageUrl: validatedData.imageUrl }),
+        ...(validatedData.images && { images: validatedData.images }),
         ...(validatedData.category && { category: validatedData.category }),
         ...(validatedData.duration !== undefined && { duration: validatedData.duration }),
         ...(validatedData.maxGuests !== undefined && { maxGuests: validatedData.maxGuests }),
@@ -183,15 +231,16 @@ export async function DELETE(
       );
     }
 
-    // Delete image from ImageKit if it exists
-    if (existingListing.imageUrl) {
-      const urlEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT || "";
-      if (existingListing.imageUrl.includes(urlEndpoint)) {
-        try {
-          await deleteImageKitFile(existingListing.imageUrl);
-        } catch (error) {
-          console.error("Error deleting image from ImageKit:", error);
-          // Continue with listing deletion even if image deletion fails
+    // Delete all images from ImageKit if they exist
+    if (existingListing.images && existingListing.images.length > 0) {
+      for (const imageUrl of existingListing.images) {
+        if (imageUrl.includes(urlEndpoint)) {
+          try {
+            await deleteImageFromImageKit(imageUrl);
+          } catch (error) {
+            console.error("Error deleting image from ImageKit:", error);
+            // Continue with listing deletion even if image deletion fails
+          }
         }
       }
     }

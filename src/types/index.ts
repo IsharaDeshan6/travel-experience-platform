@@ -11,7 +11,7 @@ export type Listing = {
   description: string;
   location: string;
   price: number;
-  imageUrl: string;
+  images: string[];
   category: string;
   duration?: string | null;
   maxGuests?: number | null;

@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
         description: validatedData.description,
         location: validatedData.location,
         price: validatedData.price,
-        imageUrl: validatedData.imageUrl,
+        images: validatedData.images,
         category: validatedData.category,
         duration: validatedData.duration || null,
         maxGuests: validatedData.maxGuests || null,

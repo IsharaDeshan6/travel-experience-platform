@@ -64,7 +64,7 @@ export function ListingCard({ listing, savedListingIds = [], onSaveToggle }: Lis
       <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 border-gray-200 hover:-translate-y-2 hover:border-blue-200">
         <div className="relative aspect-4/3 overflow-hidden bg-gray-100">
           <Image
-            src={listing.imageUrl}
+            src={listing.images[0] || "/placeholder.jpg"}
             alt={listing.title}
             fill
             className="object-cover group-hover:scale-110 transition-transform duration-500"
@@ -119,7 +119,7 @@ export function ListingCard({ listing, savedListingIds = [], onSaveToggle }: Lis
           <div className="flex items-center justify-between">
             <div>
               <span className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">
-                ${listing.price}
+                LKR {listing.price}
               </span>
               <span className="text-sm text-gray-600 ml-1">per person</span>
             </div>

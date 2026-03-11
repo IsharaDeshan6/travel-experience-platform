@@ -21,10 +21,10 @@ export const listingSchema = z.object({
     .positive("Price must be greater than 0")
     .max(999999, "Price must not exceed 999,999"),
   
-  imageUrl: z
-    .string()
-    .url("Must be a valid URL")
-    .max(500, "Image URL is too long"),
+  images: z
+    .array(z.string().url("Must be a valid URL"))
+    .min(1, "At least one image is required")
+    .max(10, "Maximum 10 images allowed"),
   
   category: z
     .string()

@@ -66,7 +66,7 @@ export default function EditListingPage({
     description: string;
     location: string;
     price: string;
-    imageUrl: string;
+    images: string[];
     category: string;
     duration?: string;
     maxGuests?: string;
@@ -78,7 +78,7 @@ export default function EditListingPage({
       description: data.description,
       location: data.location,
       price: parseFloat(data.price),
-      imageUrl: data.imageUrl,
+      images: data.images,
       category: data.category,
       duration: data.duration,
       maxGuests: data.maxGuests ? parseInt(data.maxGuests) : undefined,
@@ -139,7 +139,7 @@ export default function EditListingPage({
               description: listing.description,
               location: listing.location,
               price: Number(listing.price),
-              imageUrl: listing.imageUrl,
+              images: listing.images,
               category: listing.category,
               duration: listing.duration || "",
               maxGuests: listing.maxGuests || undefined,

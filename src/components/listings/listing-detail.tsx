@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import { ListingWithAuthor } from "@/types";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +13,8 @@ import {
   Calendar,
   User,
   Mail,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 interface ListingDetailProps {
@@ -25,19 +30,69 @@ export function ListingDetail({
   onDelete,
   isOwner = false,
 }: ListingDetailProps) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const images = listing.images || [];
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Image */}
+      {/* Image Carousel */}
       <div className="relative aspect-[21/9] rounded-xl overflow-hidden bg-gray-100 shadow-2xl hover:shadow-3xl transition-shadow duration-300">
         <Image
-          src={listing.imageUrl}
-          alt={listing.title}
+          src={images[currentImageIndex] || "/placeholder.jpg"}
+          alt={`${listing.title} - Image ${currentImageIndex + 1}`}
           fill
-          className="object-cover hover:scale-105 transition-transform duration-700"
+          className="object-cover"
           priority
           sizes="100vw"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+        
+        {/* Navigation Arrows */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={prevImage}
+              className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all"
+              aria-label="Previous image"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+            <button
+              onClick={nextImage}
+              className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all"
+              aria-label="Next image"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+            
+            {/* Image Counter */}
+            <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+              {currentImageIndex + 1} / {images.length}
+            </div>
+            
+            {/* Thumbnail strip */}
+            <div className="absolute bottom-4 left-4 flex gap-2">
+              {images.slice(0, 5).map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentImageIndex(idx)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    idx === currentImageIndex ? "bg-white w-8" : "bg-white/50"
+                  }`}
+                  aria-label={`Go to image ${idx + 1}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -120,7 +175,7 @@ export function ListingDetail({
             <CardContent className="p-6 space-y-4">
               <div>
                 <div className="flex items-baseline">
-                  <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">${listing.price}</span>
+                  <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">LKR {listing.price}</span>
                   <span className="text-gray-600 ml-2">per person</span>
                 </div>
               </div>

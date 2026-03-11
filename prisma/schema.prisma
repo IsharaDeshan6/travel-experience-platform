@@ -27,7 +27,7 @@ model Listing {
   description String   @db.Text
   location    String
   price       Decimal  @db.Decimal(10, 2)
-  imageUrl    String   @map("image_url")
+  images      String[] @map("images")
   category    String
   duration    String?
   maxGuests   Int?     @map("max_guests")

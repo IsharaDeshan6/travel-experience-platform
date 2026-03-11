@@ -22,6 +22,7 @@ export default function HomePage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const observerTarget = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef(false);
 
   // Debounce search input
   useEffect(() => {
@@ -33,8 +34,9 @@ export default function HomePage() {
   }, [searchQuery]);
 
   const fetchListings = useCallback(async (pageNum: number, reset: boolean = false) => {
-    if (loading) return;
+    if (loadingRef.current) return;
     
+    loadingRef.current = true;
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -60,10 +62,11 @@ export default function HomePage() {
     } catch (error) {
       console.error("Error fetching listings:", error);
     } finally {
+      loadingRef.current = false;
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [selectedCategory, debouncedSearch, loading]);
+  }, [selectedCategory, debouncedSearch]);
 
   // Reset and fetch on filter/search change
   useEffect(() => {
@@ -77,7 +80,7 @@ export default function HomePage() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading && !initialLoading) {
+        if (entries[0].isIntersecting && hasMore && !loadingRef.current && !initialLoading) {
           const nextPage = page + 1;
           setPage(nextPage);
           fetchListings(nextPage, false);
@@ -96,7 +99,7 @@ export default function HomePage() {
         observer.unobserve(currentTarget);
       }
     };
-  }, [hasMore, loading, initialLoading, page, fetchListings]);
+  }, [hasMore, initialLoading, page, fetchListings]);
 
   return (
     <>

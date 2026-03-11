@@ -22,16 +22,20 @@ export default function CreateListingPage() {
   }, [status, router]);
 
   const handleSubmit = async (data: any) => {
+    console.log("handleSubmit called with data:", data);
+    
     const result = await createListing({
       title: data.title,
       description: data.description,
       location: data.location,
       price: parseFloat(data.price),
-      imageUrl: data.imageUrl,
+      images: data.images,
       category: data.category,
       duration: data.duration,
       maxGuests: data.maxGuests ? parseInt(data.maxGuests) : undefined,
     });
+
+    console.log("createListing result:", result);
 
     if (result.success) {
       toast.success("Listing created successfully!");
