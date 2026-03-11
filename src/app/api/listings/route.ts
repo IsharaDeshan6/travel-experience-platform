@@ -59,8 +59,14 @@ export async function GET(request: NextRequest) {
       take: limit,
     });
 
+    // Serialize listings - convert Decimal to number
+    const serializedListings = listings.map(listing => ({
+      ...listing,
+      price: listing.price.toNumber(),
+    }));
+
     return NextResponse.json({
-      listings,
+      listings: serializedListings,
       pagination: {
         page,
         limit,
@@ -137,7 +143,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(listing, { status: 201 });
+    // Serialize listing - convert Decimal to number
+    const serializedListing = {
+      ...listing,
+      price: listing.price.toNumber(),
+    };
+
+    return NextResponse.json(serializedListing, { status: 201 });
   } catch (error) {
     console.error("Error creating listing:", error);
     return NextResponse.json(

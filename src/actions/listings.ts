@@ -83,7 +83,13 @@ export async function getUserListings() {
       },
     });
 
-    return { success: true, data: listings };
+    // Serialize listings - convert Decimal to number
+    const serializedListings = listings.map(listing => ({
+      ...listing,
+      price: listing.price.toNumber(),
+    }));
+
+    return { success: true, data: serializedListings };
   } catch (error) {
     console.error("Error fetching user listings:", error);
     return { success: false, error: "Failed to fetch listings" };
@@ -138,7 +144,13 @@ export async function createListing(data: {
     revalidatePath("/");
     revalidatePath("/dashboard");
 
-    return { success: true, data: listing };
+    // Serialize listing - convert Decimal to number
+    const serializedListing = {
+      ...listing,
+      price: listing.price.toNumber(),
+    };
+
+    return { success: true, data: serializedListing };
   } catch (error) {
     console.error("Error creating listing:", error);
     return { success: false, error: "Failed to create listing" };
@@ -196,7 +208,13 @@ export async function updateListing(
     revalidatePath("/dashboard");
     revalidatePath(`/listings/${id}`);
 
-    return { success: true, data: updatedListing };
+    // Serialize listing - convert Decimal to number
+    const serializedListing = {
+      ...updatedListing,
+      price: updatedListing.price.toNumber(),
+    };
+
+    return { success: true, data: serializedListing };
   } catch (error) {
     console.error("Error updating listing:", error);
     return { success: false, error: "Failed to update listing" };

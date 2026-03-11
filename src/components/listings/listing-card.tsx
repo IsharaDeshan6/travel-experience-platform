@@ -104,7 +104,7 @@ export function ListingCard({ listing, savedListingIds = [], onSaveToggle }: Lis
           <div className="flex items-center justify-between">
             <div>
               <span className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">
-                LKR {listing.price.toNumber()}
+                LKR {listing.price}
               </span>
               <span className="text-sm text-gray-600 ml-1">per person</span>
             </div>

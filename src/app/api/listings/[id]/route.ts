@@ -69,7 +69,13 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(listing);
+    // Serialize listing - convert Decimal to number
+    const serializedListing = {
+      ...listing,
+      price: listing.price.toNumber(),
+    };
+
+    return NextResponse.json(serializedListing);
   } catch (error) {
     console.error("Error fetching listing:", error);
     return NextResponse.json(
@@ -183,7 +189,13 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json(updatedListing);
+    // Serialize updated listing - convert Decimal to number
+    const serializedListing = {
+      ...updatedListing,
+      price: updatedListing.price.toNumber(),
+    };
+
+    return NextResponse.json(serializedListing);
   } catch (error) {
     console.error("Error updating listing:", error);
     return NextResponse.json(

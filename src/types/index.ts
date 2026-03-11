@@ -12,7 +12,7 @@ export type Listing = {
   title: string;
   description: string;
   location: string;
-  price: Decimal;
+  price: number; // API returns as number after serialization
   images: string[];
   category: string;
   duration?: string | null;
@@ -20,6 +20,11 @@ export type Listing = {
   userId: string;
   createdAt: Date;
   updatedAt: Date;
+};
+
+// Internal type for Prisma queries (before serialization)
+export type ListingPrisma = Omit<Listing, 'price'> & {
+  price: Decimal;
 };
 
 export type ListingWithAuthor = Listing & {

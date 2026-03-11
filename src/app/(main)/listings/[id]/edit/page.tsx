@@ -138,7 +138,7 @@ export default function EditListingPage({
               title: listing.title,
               description: listing.description,
               location: listing.location,
-              price: listing.price.toNumber(),
+              price: listing.price,
               images: listing.images,
               category: listing.category,
               duration: listing.duration || "",

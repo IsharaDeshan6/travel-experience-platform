@@ -46,7 +46,13 @@ export async function GET() {
 
     const listings = savedListings.map((saved) => saved.listing);
 
-    return NextResponse.json(listings);
+    // Serialize listings - convert Decimal to number
+    const serializedListings = listings.map(listing => ({
+      ...listing,
+      price: listing.price.toNumber(),
+    }));
+
+    return NextResponse.json(serializedListings);
   } catch (error) {
     console.error("Error fetching saved listings:", error);
     return NextResponse.json(
