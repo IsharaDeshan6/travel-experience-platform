@@ -28,11 +28,11 @@ export default function CreateListingPage() {
       title: data.title,
       description: data.description,
       location: data.location,
-      price: parseFloat(data.price),
+      price: data.price,
       images: data.images,
       category: data.category,
       duration: data.duration,
-      maxGuests: data.maxGuests ? parseInt(data.maxGuests) : undefined,
+      maxGuests: data.maxGuests,
     });
 
     console.log("createListing result:", result);

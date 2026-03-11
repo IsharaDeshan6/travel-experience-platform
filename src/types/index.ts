@@ -1,3 +1,5 @@
+import { Decimal } from "@prisma/client/runtime/library";
+
 export type User = {
   id: string;
   name: string;
@@ -10,7 +12,7 @@ export type Listing = {
   title: string;
   description: string;
   location: string;
-  price: number;
+  price: Decimal;
   images: string[];
   category: string;
   duration?: string | null;

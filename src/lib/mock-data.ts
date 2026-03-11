@@ -1,13 +1,14 @@
-import { Listing, ListingWithAuthor, User } from "@/types";
+// Mock data for development and testing purposes
+// Note: This file is not used in production and is kept for reference only
 
-export const mockUser: User = {
+export const mockUser = {
   id: "user-1",
   name: "John Doe",
   email: "john@example.com",
   createdAt: new Date("2024-01-15"),
 };
 
-export const mockListings: ListingWithAuthor[] = [
+export const mockListings = [
   {
     id: "1",
     title: "Sunset Safari in Serengeti",

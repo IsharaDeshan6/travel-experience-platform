@@ -65,11 +65,11 @@ export default function EditListingPage({
     title: string;
     description: string;
     location: string;
-    price: string;
+    price: number;
     images: string[];
     category: string;
     duration?: string;
-    maxGuests?: string;
+    maxGuests?: number;
   }) => {
     if (!listing) return;
 
@@ -77,11 +77,11 @@ export default function EditListingPage({
       title: data.title,
       description: data.description,
       location: data.location,
-      price: parseFloat(data.price),
+      price: data.price,
       images: data.images,
       category: data.category,
       duration: data.duration,
-      maxGuests: data.maxGuests ? parseInt(data.maxGuests) : undefined,
+      maxGuests: data.maxGuests,
     });
 
     if (result.success) {
@@ -138,7 +138,7 @@ export default function EditListingPage({
               title: listing.title,
               description: listing.description,
               location: listing.location,
-              price: Number(listing.price),
+              price: listing.price.toNumber(),
               images: listing.images,
               category: listing.category,
               duration: listing.duration || "",

@@ -66,7 +66,6 @@ export async function deleteImageKitFile(fileIdOrUrl: string): Promise<boolean> 
       }
 
       // List files to get fileId by path
-      // @ts-expect-error - ImageKit listFiles method
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const listResponse: any = await (imagekit as any).listFiles({
         path: filePath.split("/").slice(0, -1).join("/") || "/",
@@ -81,7 +80,6 @@ export async function deleteImageKitFile(fileIdOrUrl: string): Promise<boolean> 
       fileId = listResponse[0].fileId;
     }
 
-    // @ts-expect-error - ImageKit deleteFile method
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (imagekit as any).deleteFile(fileId);
     return true;

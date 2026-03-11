@@ -109,7 +109,7 @@ export default function ListingDetailPage({
           listing={listing}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          isOwner={isOwner}
+          isOwner={isOwner || false}
         />
       </Container>
     </div>

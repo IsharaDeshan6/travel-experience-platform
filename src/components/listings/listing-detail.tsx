@@ -175,7 +175,7 @@ export function ListingDetail({
             <CardContent className="p-6 space-y-4">
               <div>
                 <div className="flex items-baseline">
-                  <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">LKR {listing.price}</span>
+                  <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">LKR {listing.price.toNumber()}</span>
                   <span className="text-gray-600 ml-2">per person</span>
                 </div>
               </div>
