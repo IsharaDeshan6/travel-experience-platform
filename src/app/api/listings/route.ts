@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
+import { createListingSchema } from "@/lib/validations";
 
 // GET /api/listings - Fetch all listings with pagination and search
 export async function GET(request: NextRequest) {
@@ -87,35 +88,39 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {
-      title,
-      description,
-      location,
-      price,
-      imageUrl,
-      category,
-      duration,
-      maxGuests,
-    } = body;
+    
+    // Validate with Zod
+    const validationResult = createListingSchema.safeParse({
+      ...body,
+      price: typeof body.price === 'string' ? parseFloat(body.price) : body.price,
+      maxGuests: body.maxGuests ? (typeof body.maxGuests === 'string' ? parseInt(body.maxGuests) : body.maxGuests) : null,
+    });
 
-    // Validate required fields
-    if (!title || !description || !location || !price || !imageUrl || !category) {
+    if (!validationResult.success) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { 
+          error: "Validation failed", 
+          details: validationResult.error.issues.map(issue => ({
+            field: issue.path.join('.'),
+            message: issue.message,
+          }))
+        },
         { status: 400 }
       );
     }
 
+    const validatedData = validationResult.data;
+
     const listing = await prisma.listing.create({
       data: {
-        title,
-        description,
-        location,
-        price: parseFloat(price),
-        imageUrl,
-        category,
-        duration,
-        maxGuests: maxGuests ? parseInt(maxGuests) : null,
+        title: validatedData.title,
+        description: validatedData.description,
+        location: validatedData.location,
+        price: validatedData.price,
+        imageUrl: validatedData.imageUrl,
+        category: validatedData.category,
+        duration: validatedData.duration || null,
+        maxGuests: validatedData.maxGuests || null,
         userId: session.user.id,
       },
       include: {

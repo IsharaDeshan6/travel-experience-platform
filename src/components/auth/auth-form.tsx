@@ -8,6 +8,7 @@ import {Label} from "@/components/ui/label";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {Compass, Loader2} from "lucide-react";
 import {signIn} from "next-auth/react";
+import { toast } from "sonner";
 
 interface AuthFormProps {
     mode: "login" | "register";
@@ -41,9 +42,20 @@ export function AuthForm({mode}: AuthFormProps) {
 
                 const data = await res.json();
                 if (!res.ok) {
-                    throw new Error(data.error || "Failed to create account");
+                    // Show validation errors if available
+                    if (data.details && Array.isArray(data.details)) {
+                        data.details.forEach((detail: { message: string }) => {
+                            toast.error(detail.message);
+                        });
+                    } else {
+                        toast.error(data.error || "Failed to create account");
+                    }
+                    setIsLoading(false);
+                    return;
                 }
 
+                toast.success("Account created successfully!");
+                
                 const signInResult = await signIn("credentials", {
                     email: formData.email,
                     password: formData.password,
@@ -51,7 +63,9 @@ export function AuthForm({mode}: AuthFormProps) {
                 });
 
                 if (signInResult?.error) {
-                    throw new Error("Account created but failed to sign in");
+                    toast.error("Account created but failed to sign in");
+                    setIsLoading(false);
+                    return;
                 }
 
                 window.location.href = "/";
@@ -63,14 +77,17 @@ export function AuthForm({mode}: AuthFormProps) {
                     redirect: false,
                 });
                 if (result?.error) {
-                    throw new Error("Invalid email or password");
+                    toast.error("Invalid email or password");
+                    setIsLoading(false);
+                    return;
                 }
 
+                toast.success("Logged in successfully!");
                 window.location.href = "/";
             }
         } catch (error) {
             console.error("Auth error:", error);
-        } finally {
+            toast.error("An unexpected error occurred");
             setIsLoading(false);
         }
     };

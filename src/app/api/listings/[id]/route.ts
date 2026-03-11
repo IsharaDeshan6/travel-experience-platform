@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { updateListingSchema } from "@/lib/validations";
+import { deleteImageKitFile } from "@/lib/imagekit/server";
 
 // GET /api/listings/[id] - Fetch single listing
 export async function GET(
@@ -77,28 +79,52 @@ export async function PUT(
       );
     }
 
-    const {
-      title,
-      description,
-      location,
-      price,
-      imageUrl,
-      category,
-      duration,
-      maxGuests,
-    } = body;
+    // Validate with Zod (partial update)
+    const validationResult = updateListingSchema.safeParse({
+      ...body,
+      price: body.price ? (typeof body.price === 'string' ? parseFloat(body.price) : body.price) : undefined,
+      maxGuests: body.maxGuests ? (typeof body.maxGuests === 'string' ? parseInt(body.maxGuests) : body.maxGuests) : undefined,
+    });
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { 
+          error: "Validation failed", 
+          details: validationResult.error.issues.map(issue => ({
+            field: issue.path.join('.'),
+            message: issue.message,
+          }))
+        },
+        { status: 400 }
+      );
+    }
+
+    const validatedData = validationResult.data;
+
+    // If imageUrl is being updated, delete old image from ImageKit
+    if (validatedData.imageUrl && validatedData.imageUrl !== existingListing.imageUrl) {
+      const urlEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT || "";
+      if (existingListing.imageUrl.includes(urlEndpoint)) {
+        try {
+          await deleteImageKitFile(existingListing.imageUrl);
+        } catch (error) {
+          console.error("Error deleting old image from ImageKit:", error);
+          // Continue with update even if old image deletion fails
+        }
+      }
+    }
 
     const updatedListing = await prisma.listing.update({
       where: { id },
       data: {
-        ...(title && { title }),
-        ...(description && { description }),
-        ...(location && { location }),
-        ...(price && { price: parseFloat(price) }),
-        ...(imageUrl && { imageUrl }),
-        ...(category && { category }),
-        ...(duration && { duration }),
-        ...(maxGuests && { maxGuests: parseInt(maxGuests) }),
+        ...(validatedData.title && { title: validatedData.title }),
+        ...(validatedData.description && { description: validatedData.description }),
+        ...(validatedData.location && { location: validatedData.location }),
+        ...(validatedData.price && { price: validatedData.price }),
+        ...(validatedData.imageUrl && { imageUrl: validatedData.imageUrl }),
+        ...(validatedData.category && { category: validatedData.category }),
+        ...(validatedData.duration !== undefined && { duration: validatedData.duration }),
+        ...(validatedData.maxGuests !== undefined && { maxGuests: validatedData.maxGuests }),
       },
       include: {
         author: {
@@ -155,6 +181,19 @@ export async function DELETE(
         { error: "Forbidden: You can only delete your own listings" },
         { status: 403 }
       );
+    }
+
+    // Delete image from ImageKit if it exists
+    if (existingListing.imageUrl) {
+      const urlEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT || "";
+      if (existingListing.imageUrl.includes(urlEndpoint)) {
+        try {
+          await deleteImageKitFile(existingListing.imageUrl);
+        } catch (error) {
+          console.error("Error deleting image from ImageKit:", error);
+          // Continue with listing deletion even if image deletion fails
+        }
+      }
     }
 
     await prisma.listing.delete({

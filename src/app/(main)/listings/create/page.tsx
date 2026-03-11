@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { createListing } from "@/actions/listings";
+import { toast } from "sonner";
 
 export default function CreateListingPage() {
   const router = useRouter();
@@ -33,9 +34,10 @@ export default function CreateListingPage() {
     });
 
     if (result.success) {
+      toast.success("Listing created successfully!");
       router.push("/dashboard");
     } else {
-      alert(result.error || "Failed to create listing");
+      toast.error(result.error || "Failed to create listing");
     }
   };
 

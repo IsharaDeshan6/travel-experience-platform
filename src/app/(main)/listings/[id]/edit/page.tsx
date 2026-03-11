@@ -10,6 +10,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { updateListing } from "@/actions/listings";
 import { ListingWithAuthor } from "@/types";
+import { toast } from "sonner";
 
 export default function EditListingPage({
   params,
@@ -37,18 +38,19 @@ export default function EditListingPage({
             
             // Check if user is the owner
             if (data.userId !== session?.user?.id) {
-              alert("You can only edit your own listings");
+              toast.error("You can only edit your own listings");
               router.push(`/listings/${resolvedParams.id}`);
               return;
             }
             
             setListing(data);
           } else {
-            alert("Listing not found");
+            toast.error("Listing not found");
             router.push("/dashboard");
           }
         } catch (error) {
           console.error("Error fetching listing:", error);
+          toast.error("Failed to load listing");
           router.push("/dashboard");
         } finally {
           setLoading(false);
@@ -83,9 +85,10 @@ export default function EditListingPage({
     });
 
     if (result.success) {
+      toast.success("Listing updated successfully!");
       router.push(`/listings/${listing.id}`);
     } else {
-      alert(result.error || "Failed to update listing");
+      toast.error(result.error || "Failed to update listing");
     }
   };
 
