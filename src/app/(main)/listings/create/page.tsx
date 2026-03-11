@@ -21,7 +21,7 @@ export default function CreateListingPage() {
     }
   }, [status, router]);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: { title: string; description: string; location: string; price: number; images: string[]; category: string; duration?: string; maxGuests?: number }) => {
     console.log("handleSubmit called with data:", data);
     
     const result = await createListing({

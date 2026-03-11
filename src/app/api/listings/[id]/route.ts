@@ -22,10 +22,6 @@ async function deleteImageFromImageKit(imageUrl: string): Promise<void> {
   });
 
   try {
-    // Extract file path from URL
-    const urlObj = new URL(imageUrl);
-    const filePath = urlObj.pathname;
-
     // List files to find the fileId
     const files = await imagekit.listFiles({
       searchQuery: `name="${imageUrl.split('/').pop()}"`,

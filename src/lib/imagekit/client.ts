@@ -1,19 +1,13 @@
-// @ts-nocheck
-// Note: This file contains ImageKit utility functions that are not currently in use.
-// Type checking is disabled to prevent build errors. Re-enable when implementing client-side ImageKit features.
-
-// import ImageKit from '@imagekit/javascript';
+// Note: This file contains ImageKit utility functions for client-side usage.
+// Currently using API routes for uploads, but these utilities can be used for transformations.
 
 const publicKey = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY || '';
 const urlEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT || '';
-const privateKey = process.env.IMAGEKIT_PRIVATE_KEY || '';
 
-// Client-side ImageKit instance (browser) - commented out as not currently used
-// The browser SDK is not needed as we handle uploads via API routes
+// Client-side ImageKit instance (browser) - using API routes instead
 export const imagekit = null;
 
-// Server-side ImageKit instance (Node.js) - includes private key
-// Note: This is initialized in API routes using the 'imagekit' package
+// Server-side ImageKit instance (Node.js) - see server.ts
 export const imagekitServer = null;
 
 /**
@@ -55,26 +49,17 @@ export function getImageKitUrl(
 
 /**
  * List all files in a specific folder from ImageKit
- * @param folderPath - Folder path in ImageKit (e.g., "pets/gallery")
+ * Note: This function is a placeholder. Use API routes for actual file listing.
+ * @param _folderPath - Folder path in ImageKit (e.g., "pets/gallery")
  * @returns Array of image URLs
  */
-export async function listImageKitFiles(folderPath: string = ''): Promise<string[]> {
+export async function listImageKitFiles(_folderPath: string = ''): Promise<string[]> {
   if (!imagekitServer) {
     console.warn('ImageKit not configured. Using placeholder images.');
     return [];
   }
 
-  try {
-    const response = await imagekitServer.listFiles({
-      path: folderPath,
-      includeFolder: false,
-    });
-
-    return response.map((file: any) => file.url);
-  } catch (error) {
-    console.error('Error fetching ImageKit files:', error);
-    return [];
-  }
+  return [];
 }
 
 /**

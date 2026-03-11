@@ -101,31 +101,16 @@ export async function createListing(data: {
   maxGuests?: number;
 }) {
   try {
-    console.log("createListing called with data:", JSON.stringify(data, null, 2));
-    
     const session = await auth();
 
     if (!session || !session.user?.id) {
-      console.error("createListing: No session or user ID");
       return { success: false, error: "Unauthorized" };
     }
 
-    console.log("createListing: User authenticated:", session.user.id);
-
     // Validate required fields
     if (!data.title || !data.description || !data.location || !data.price || !data.images || data.images.length === 0 || !data.category) {
-      console.error("createListing: Validation failed", {
-        title: !!data.title,
-        description: !!data.description,
-        location: !!data.location,
-        price: !!data.price,
-        images: data.images?.length || 0,
-        category: !!data.category,
-      });
       return { success: false, error: "Missing required fields" };
     }
-
-    console.log("createListing: Creating listing in database...");
 
     const listing = await prisma.listing.create({
       data: {
@@ -149,8 +134,6 @@ export async function createListing(data: {
         },
       },
     });
-
-    console.log("createListing: Listing created successfully:", listing.id);
 
     revalidatePath("/");
     revalidatePath("/dashboard");

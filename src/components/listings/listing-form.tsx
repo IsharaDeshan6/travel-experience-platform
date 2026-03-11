@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NativeSelect } from "@/components/ui/native-select";
 import { CATEGORIES } from "@/lib/constants";
-import { Loader2, Upload, X, Plus } from "lucide-react";
+import { Loader2, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 
@@ -23,7 +23,7 @@ interface ListingFormProps {
     duration?: string;
     maxGuests?: number;
   };
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: { title: string; description: string; location: string; price: number; images: string[]; category: string; duration?: string; maxGuests?: number }) => Promise<void>;
   submitLabel?: string;
 }
 
