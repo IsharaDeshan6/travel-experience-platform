@@ -15,7 +15,8 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  listings Listing[]
+  listings      Listing[]
+  savedListings SavedListing[]
 
   @@map("users")
 }
@@ -34,10 +35,28 @@ model Listing {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  author User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  author        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  savedByUsers  SavedListing[]
 
   @@index([userId])
   @@index([category])
   @@index([createdAt])
+  @@index([title])
+  @@index([location])
   @@map("listings")
+}
+
+model SavedListing {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  listingId String   @map("listing_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
+  @@map("saved_listings")
 }

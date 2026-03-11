@@ -6,9 +6,11 @@ import { ListingWithAuthor } from "@/types";
 interface ListingGridProps {
   listings: ListingWithAuthor[];
   isLoading?: boolean;
+  savedListingIds?: string[];
+  onSaveToggle?: (listingId: string, isSaved: boolean) => void;
 }
 
-export function ListingGrid({ listings, isLoading }: ListingGridProps) {
+export function ListingGrid({ listings, isLoading, savedListingIds = [], onSaveToggle }: ListingGridProps) {
   if (isLoading) {
     return <ListingGridSkeleton count={6} />;
   }
@@ -27,7 +29,12 @@ export function ListingGrid({ listings, isLoading }: ListingGridProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {listings.map((listing) => (
-        <ListingCard key={listing.id} listing={listing} />
+        <ListingCard 
+          key={listing.id} 
+          listing={listing} 
+          savedListingIds={savedListingIds}
+          onSaveToggle={onSaveToggle}
+        />
       ))}
     </div>
   );

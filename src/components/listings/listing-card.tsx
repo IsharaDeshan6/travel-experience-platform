@@ -1,9 +1,12 @@
 import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { ListingWithAuthor } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, User, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MapPin, User, Clock, Heart } from "lucide-react";
 
 function formatTimeAgo(date: Date): string {
   const now = new Date();
@@ -19,13 +22,47 @@ function formatTimeAgo(date: Date): string {
 
 interface ListingCardProps {
   listing: ListingWithAuthor;
+  savedListingIds?: string[];
+  onSaveToggle?: (listingId: string, isSaved: boolean) => void;
 }
 
-export function ListingCard({ listing }: ListingCardProps) {
+export function ListingCard({ listing, savedListingIds = [], onSaveToggle }: ListingCardProps) {
+  const { data: session } = useSession();
+  const [isSaved, setIsSaved] = useState(savedListingIds.includes(listing.id));
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSaveClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!session) {
+      alert("Please login to save listings");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const method = isSaved ? "DELETE" : "POST";
+      const response = await fetch(`/api/listings/${listing.id}/save`, {
+        method,
+      });
+
+      if (response.ok) {
+        const newSavedState = !isSaved;
+        setIsSaved(newSavedState);
+        onSaveToggle?.(listing.id, newSavedState);
+      }
+    } catch (error) {
+      console.error("Error toggling save:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <Link href={`/listings/${listing.id}`} className="block group">
       <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 border-gray-200 hover:-translate-y-2 hover:border-blue-200">
-        <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+        <div className="relative aspect-4/3 overflow-hidden bg-gray-100">
           <Image
             src={listing.imageUrl}
             alt={listing.title}
@@ -38,8 +75,24 @@ export function ListingCard({ listing }: ListingCardProps) {
               {listing.category}
             </Badge>
           </div>
+          
+          {/* Save Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`absolute top-3 right-3 h-10 w-10 rounded-full backdrop-blur-sm transition-all ${
+              isSaved 
+                ? "bg-red-500 text-white hover:bg-red-600" 
+                : "bg-white/90 text-gray-700 hover:bg-white"
+            }`}
+            onClick={handleSaveClick}
+            disabled={isSaving}
+          >
+            <Heart className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`} />
+          </Button>
+
           {/* Gradient overlay on hover */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
         <CardContent className="p-4">
           <h3 className="font-semibold text-lg mb-2 line-clamp-1 group-hover:text-blue-600 transition-colors duration-200">

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {useState} from "react";
 import {Button} from "@/components/ui/button";
-import {Compass, Menu, Plus, X} from "lucide-react";
+import {Compass, Menu, Plus, X, Heart} from "lucide-react";
 import {useSession, signOut} from "next-auth/react";
 import {
     DropdownMenu,
@@ -75,6 +75,12 @@ export function Navbar() {
                                         <DropdownMenuItem asChild>
                                             <Link href="/dashboard" className="cursor-pointer w-full">
                                                 Dashboard
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/saved" className="cursor-pointer w-full flex items-center gap-2">
+                                                <Heart className="h-4 w-4" />
+                                                Saved Listings
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild>
@@ -162,6 +168,13 @@ export function Navbar() {
                                                 <Link href="/dashboard" className="cursor-pointer w-full"
                                                       onClick={() => setMobileMenuOpen(false)}>
                                                     Dashboard
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/saved" className="cursor-pointer w-full flex items-center gap-2"
+                                                      onClick={() => setMobileMenuOpen(false)}>
+                                                    <Heart className="h-4 w-4" />
+                                                    Saved Listings
                                                 </Link>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem asChild>

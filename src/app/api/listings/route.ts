@@ -1,15 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { Prisma } from "@prisma/client";
 
-// GET /api/listings - Fetch all listings
+// GET /api/listings - Fetch all listings with pagination and search
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
+    const search = searchParams.get("search");
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "12");
+    const skip = (page - 1) * limit;
 
-    const where = category ? { category } : {};
+    // Build where clause
+    const where: Prisma.ListingWhereInput = {};
+    
+    if (category) {
+      where.category = category;
+    }
 
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { location: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    // Get total count for pagination
+    const total = await prisma.listing.count({ where });
+
+    // Fetch listings
     const listings = await prisma.listing.findMany({
       where,
       include: {
@@ -20,13 +42,29 @@ export async function GET(request: NextRequest) {
             email: true,
           },
         },
+        _count: {
+          select: {
+            savedByUsers: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
       },
+      skip,
+      take: limit,
     });
 
-    return NextResponse.json(listings);
+    return NextResponse.json({
+      listings,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: page < Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching listings:", error);
     return NextResponse.json(

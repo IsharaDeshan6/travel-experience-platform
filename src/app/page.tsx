@@ -1,38 +1,102 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Container } from "@/components/layout/container";
 import { ListingGrid } from "@/components/listings/listing-grid";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { CATEGORIES } from "@/lib/constants";
-import { Search, Sparkles } from "lucide-react";
+import { Search, Sparkles, Loader2 } from "lucide-react";
 import { ListingWithAuthor } from "@/types";
 
 export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [listings, setListings] = useState<ListingWithAuthor[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+  const observerTarget = useRef<HTMLDivElement>(null);
 
+  // Debounce search input
   useEffect(() => {
-    async function fetchListings() {
-      try {
-        const response = await fetch("/api/listings");
-        if (response.ok) {
-          const data = await response.json();
-          setListings(data);
-        }
-      } catch (error) {
-        console.error("Error fetching listings:", error);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const fetchListings = useCallback(async (pageNum: number, reset: boolean = false) => {
+    if (loading) return;
+    
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: pageNum.toString(),
+        limit: "12",
+      });
+
+      if (selectedCategory) {
+        params.append("category", selectedCategory);
       }
+
+      if (debouncedSearch) {
+        params.append("search", debouncedSearch);
+      }
+
+      const response = await fetch(`/api/listings?${params}`);
+      if (response.ok) {
+        const data = await response.json();
+        setListings(prev => reset ? data.listings : [...prev, ...data.listings]);
+        setHasMore(data.pagination.hasMore);
+        setTotalCount(data.pagination.total);
+      }
+    } catch (error) {
+      console.error("Error fetching listings:", error);
+    } finally {
+      setLoading(false);
+      setInitialLoading(false);
+    }
+  }, [selectedCategory, debouncedSearch, loading]);
+
+  // Reset and fetch on filter/search change
+  useEffect(() => {
+    setPage(1);
+    setListings([]);
+    setHasMore(true);
+    fetchListings(1, true);
+  }, [selectedCategory, debouncedSearch, fetchListings]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading && !initialLoading) {
+          const nextPage = page + 1;
+          setPage(nextPage);
+          fetchListings(nextPage, false);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
     }
 
-    fetchListings();
-  }, []);
-
-  const filteredListings = selectedCategory
-    ? listings.filter((listing) => listing.category === selectedCategory)
-    : listings;
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [hasMore, loading, initialLoading, page, fetchListings]);
 
   return (
     <>
@@ -85,6 +149,24 @@ export default function HomePage() {
         </Container>
       </section>
 
+      {/* Search Bar */}
+      <section className="py-6 bg-white border-b">
+        <Container>
+          <div className="max-w-2xl mx-auto">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search by title, location, or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-12 text-base"
+              />
+            </div>
+          </div>
+        </Container>
+      </section>
+
       {/* Categories Section */}
       <section className="py-8 border-b sticky top-16 z-40 backdrop-blur-sm bg-gray-50/95">
         <Container>
@@ -94,23 +176,18 @@ export default function HomePage() {
               className="cursor-pointer px-4 py-2 hover:scale-105 transition-all duration-200 hover:shadow-md"
               onClick={() => setSelectedCategory(null)}
             >
-              All ({listings.length})
+              All {totalCount > 0 && `(${totalCount})`}
             </Badge>
-            {CATEGORIES.map((category) => {
-              const count = listings.filter(
-                (l) => l.category === category
-              ).length;
-              return (
-                <Badge
-                  key={category}
-                  variant={selectedCategory === category ? "default" : "outline"}
-                  className="cursor-pointer px-4 py-2 hover:scale-105 transition-all duration-200 hover:shadow-md"
-                  onClick={() => setSelectedCategory(category)}
-                >
-                  {category} ({count})
-                </Badge>
-              );
-            })}
+            {CATEGORIES.map((category) => (
+              <Badge
+                key={category}
+                variant={selectedCategory === category ? "default" : "outline"}
+                className="cursor-pointer px-4 py-2 hover:scale-105 transition-all duration-200 hover:shadow-md"
+                onClick={() => setSelectedCategory(category)}
+              >
+                {category}
+              </Badge>
+            ))}
           </div>
         </Container>
       </section>
@@ -122,13 +199,40 @@ export default function HomePage() {
             <h2 className="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               {selectedCategory
                 ? `${selectedCategory} Experiences`
+                : debouncedSearch
+                ? `Search Results`
                 : "Explore All Experiences"}
             </h2>
             <p className="text-gray-600">
-              {filteredListings.length} experience{filteredListings.length !== 1 ? "s" : ""} available
+              {initialLoading ? "Loading..." : `${totalCount} experience${totalCount !== 1 ? "s" : ""} available`}
             </p>
           </div>
-          <ListingGrid listings={filteredListings} />
+
+          {initialLoading ? (
+            <div className="flex justify-center items-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+          ) : listings.length === 0 ? (
+            <div className="text-center py-20">
+              <Search className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-600 mb-2">No listings found</h3>
+              <p className="text-gray-500">Try adjusting your search or filters</p>
+            </div>
+          ) : (
+            <>
+              <ListingGrid listings={listings} />
+              
+              {/* Infinite Scroll Trigger */}
+              <div ref={observerTarget} className="py-8 flex justify-center">
+                {loading && (
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                )}
+                {!loading && !hasMore && listings.length > 0 && (
+                  <p className="text-gray-500 text-sm">You&apos;ve reached the end</p>
+                )}
+              </div>
+            </>
+          )}
         </Container>
       </section>
 
